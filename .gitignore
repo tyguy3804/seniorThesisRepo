@@ -1,0 +1,6 @@
+# Ignore large data files
+/code/data/*
+*.nc
+*.grib2
+*.csv
+*.zip
