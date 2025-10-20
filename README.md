@@ -85,6 +85,13 @@ The following sections detail the specific use cases that the model will support
 - 2. Model displays it's confidence rating and aborts.
 
 ### Use Case 1.3: Update Prediction with new data
+- **Actors**: Model
+**Typical Course of Events**:
+1. Model extracts the most recent, updated data
+2. Model makes meteorlogical calculations and updates the dataset.
+3. Model makes a new prediction based on new data.
+
+**Alternative Courses**:
 
 ### Use Case 1.4: Download Prediction
 

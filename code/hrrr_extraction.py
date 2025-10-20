@@ -11,8 +11,8 @@ import os, calendar
 os.makedirs(f"C:/Users/lwojd/Data/hrrr/surface", exist_ok=True)
 os.makedirs(f"C:/Users/lwojd/Data/hrrr/pressure", exist_ok=True)
 
-for year in range(2017, 2025):
-    for month in range(1, 13):
+for year in range(2017, 2019):
+    for month in range(7, 13):
         daysInMonth = calendar.monthrange(year, month)[1]
 
         for day in range(1, daysInMonth + 1):
@@ -112,7 +112,7 @@ for year in range(2017, 2025):
                     temp_dataset.to_netcdf(temp_sur_path)
                     wind_dataset.to_netcdf(wind_sur_path)    
                     pressure_dataset.to_netcdf(file_press_path)
-                    print(f"Dataset for {year}/{day}{month} created.")
+                    print(f"Dataset for {year}/{day}/{month} created.")
             else:
                 print("List is empty, could not concatenate OR File already exists")
 
