@@ -12,7 +12,7 @@ os.makedirs(f"C:/Users/lwojd/Data/hrrr/surface", exist_ok=True)
 os.makedirs(f"C:/Users/lwojd/Data/hrrr/pressure", exist_ok=True)
 
 for year in range(2017, 2019):
-    for month in range(7, 13):
+    for month in range(12, 13):
         daysInMonth = calendar.monthrange(year, month)[1]
 
         for day in range(1, daysInMonth + 1):
