@@ -6,6 +6,7 @@ import numpy as np
 import calendar
 import os
 import zipfile
+import math
 
 #data[time_index, pressure_level_index, latitude_index, longitude_index]
 #time_index = 0-23 for all 24 hours of data
@@ -13,69 +14,75 @@ import zipfile
 #latitude_index = north to south (most likely use a : for all levles)
 #longitude_index = east to west(use :)
     
-def calc_cape_cin(data):
-    #**CAPE/CIN**
-    #Parameter 1- Total pressure
-    #Parameter 2- Temperature corresponding to each pressure level 
-    #Parameter 3- Dewpoint corresponding to each pressure level (Need to be calculated using specific humidity)
-    #Parameter 4- Parcel Profile
-        #Parameter 1- Total pressure
-        #Parameter 2- Starting temperature (0Z)
-        #Parameter 3- Starting dewpoint (0Z) (*Not sure if the 2m_dewpoint_temperature can work for this or it haas to be calculated like above)
+#**Taken from this source https://unidata.github.io/MetPy/latest/examples/calculations/Sounding_Calculations.html#sphx-glr-examples-calculations-sounding-calculations-py**
+def effective_layer(p, t, td, h, height_layer=False):
+    """A function that determines the effective inflow layer for a convective sounding.
 
-    for time in range(0, 23):
-        p = data.variables['pressure_level'][:] 
-        pressure_levels = p.filled(np.nan) * units.hPa  
-        pressure_levels_dewpoint = pressure_levels[:, np.newaxis, np.newaxis]
+    Uses the default values of Thompason et al. (2004) for CAPE (100 J/kg) and CIN (-250 J/kg).
 
-        q = data.variables['q'][time]
-        specific_humidity = q.filled(np.nan) * units('kg/kg')
-        specific_humidity = specific_humidity * 1000
-        specific_humidity = specific_humidity * units('g/kg')
+    Input:
+      - p: sounding pressure with units
+      - T: sounding temperature with units
+      - Td: sounding dewpoint temperature with units
+      - h: sounding heights with units
 
-        t = data.variables['t'][time]
-        temp = t.filled(np.nan) * units.kelvin    
+    Returns:
+      - pbot/hbot, ptop/htop: pressure/height of the bottom level,
+                              pressure/height of the top level
+    """
+    from metpy.calc import cape_cin, parcel_profile
+    from metpy.units import units
 
-        dewpoint_data = mpcalc.dewpoint_from_specific_humidity(pressure_levels_dewpoint, specific_humidity)
+    pbot = None
 
-        prof = mpcalc.parcel_profile(pressure_levels, temp[0][0][0], dewpoint_data[0][0][0]).to('degC')
-        prof_extra = prof[:, np.newaxis, np.newaxis]
+    for i in range(p.shape[0]):
+        prof = parcel_profile(p[i:], t[i], td[i])
+        sbcape, sbcin = cape_cin(p[i:], t[i:], td[i:], prof)
+        if sbcape >= 100 * units('J/kg') and sbcin > -250 * units('J/kg'):
+            pbot = p[i]
+            hbot = h[i]
+            bot_idx = i
+            break
+    if not pbot:
+        return None, None
 
-        cape_grid = np.zeros((14, 35))
-        cin_grid = np.zeros((14, 35))
-        pressure_levels_3d = np.broadcast_to(pressure_levels_dewpoint, (11, 14, 35))
+    for i in range(bot_idx + 1, p.shape[0]):
+        prof = parcel_profile(p[i:], t[i], td[i])
+        sbcape, sbcin = cape_cin(p[i:], t[i:], td[i:], prof)
+        if sbcape < 100 * units('J/kg') or sbcin < -250 * units('J/kg'):
+            ptop = p[i]
+            htop = h[i]
+            break
 
-        for i in range(0, 14):
-            for j in range(0, 35):
-
-                prof = mpcalc.parcel_profile(pressure_levels_3d[:, i, j], temp[0, i, j], dewpoint_data[0, i, j]).to('degC')
-
-                cape_val, cin_val = mpcalc.cape_cin(pressure_levels_3d[:, i, j], temp[:, i, j], dewpoint_data[:, i, j], prof)
-
-                cape_grid[i, j] = cape_val.magnitude
-                cin_grid[i, j] = cin_val.magnitude
+    if height_layer:
+        return hbot, htop
+    else:
+        return pbot, ptop
     
-
-    print("Calculating CAPE and CIN")
-
 
 def calculate_era5():
     n_times = 306600
     n_lat = 14
     n_long = 35
 
+    lfc_dtype = [('lfc_press', 'f4'), ('lfc_temp', 'f4')]
+    lcl_dtype = [('lcl_press', 'f4'), ('lcl_temp', 'f4')]
+    ml_dtype = [('ml_CAPE', 'f4'), ('ml_CIN', 'f4')]
+    sb_dtype = [('sb_CAPE', 'f4'), ('sb_CIN', 'f4')]
+    mu_dtype = [('mu_CAPE', 'f4'), ('mu_CIN', 'f4')]
+
     #create data arrays for all variables
     pwat_array = np.zeros((n_times, n_lat, n_long))
-    dewpt_array = np.zeros((n_times, n_lat, n_long))
-    lfc_array = np.zeros((n_times, n_lat, n_long))
-    lcl_array = np.zeros((n_times, n_lat, n_long))
-    lapse_rates_array = np.zeros((n_times, n_lat, n_long))
+    dewpt_array = np.zeros((n_times, n_lat, n_long, 11))
+    lfc_array = np.zeros((n_times, n_lat, n_long), dtype=lfc_dtype)
+    lcl_array = np.zeros((n_times, n_lat, n_long), dtype=lcl_dtype)
+    lapse_rates_array = np.zeros((n_times, n_lat, n_long, 11))
     showalter_idx_array = np.zeros((n_times, n_lat, n_long))
-    ml_CAPE_CIN_array = np.zeros((n_times, n_lat, n_long))
-    sb_CAPE_CIN_array = np.zeros((n_times, n_lat, n_long))
-    mu_CPAE_CIN_array = np.zeros((n_times, n_lat, n_long))
-    blk_shear_0to6km_array = np.zeros((n_times, n_lat, n_long))
-    blk_shear_0to3km_array = np.zeros((n_times, n_lat, n_long))
+    ml_CAPE_CIN_array = np.zeros((n_times, n_lat, n_long), dtype=ml_dtype)
+    sb_CAPE_CIN_array = np.zeros((n_times, n_lat, n_long), dtype=sb_dtype)
+    mu_CAPE_CIN_array = np.zeros((n_times, n_lat, n_long), dtype=mu_dtype)
+    bulk_shear_0to3km_array = np.zeros((n_times, n_lat, n_long))
+    bulk_shear_0to6km_array = np.zeros((n_times, n_lat, n_long))
     srh_array = np.zeros((n_times, n_lat, n_long))
     sig_tor_array = np.zeros((n_times, n_lat, n_long))
     supercell_array = np.zeros((n_times, n_lat, n_long))
@@ -88,8 +95,8 @@ def calculate_era5():
                 print(f"Day is: {day}")
 
                 #pull pressure and surface files for year/month/day
-                #press_path = f"C:/Users/lwojd/Data/era5/pressure/{year}/{month:02d}/era5_press_{year}{month:02d}{day:02d}.nc"
-                press_path = f"C:/Users/lwojd/Data/era5/pressure/1980/05/era5_press_19800521.nc"
+                press_path = f"C:/Users/lwojd/Data/era5/pressure/{year}/{month:02d}/era5_press_{year}{month:02d}{day:02d}.nc"
+                #press_path = f"C:/Users/lwojd/Data/era5/pressure/1980/05/era5_press_19800521.nc"
 
                 sur_path = f"C:/Users/lwojd/Data/era5/surface/{year}/{month:02d}/era5_sur_{year}{month:02d}{day:02d}.nc"
                 
@@ -104,10 +111,12 @@ def calculate_era5():
                         ds_sur = Dataset('dummy', mode='r', memory=f.read())
                 
                 for time in range(0, 24):
+                    print(f"Time is: {time}")
                     for lat_idx in range(0, 14):
                         for(long_idx) in range(0, 35):
                             
                             p = ds_press.variables['pressure_level'][:]
+                            sp = (ds_sur.variables['sp'][time, lat_idx, long_idx] / 100) * units.hPa
                             pressure = p.filled(np.nan) * units.hPa
 
                             q = ds_press.variables['q'][time, :, lat_idx, long_idx]
@@ -116,6 +125,7 @@ def calculate_era5():
                             spec_humidity = spec_humidity * units('g/kg')
 
                             t = ds_press.variables['t'][time, :, lat_idx, long_idx]
+                            t2m = ds_sur.variables['t2m'][time, lat_idx, long_idx] * units.kelvin
                             temp = t.filled(np.nan) * units.kelvin
                             temp = temp.to('degC')
 
@@ -126,14 +136,86 @@ def calculate_era5():
                             lapse_rates = mpcalc.dry_lapse(pressure, temp[0]).to('degC')
                             showalter_idx = mpcalc.showalter_index(pressure, temp, dewpt)
                             ml_CAPE, ml_CIN = mpcalc.mixed_layer_cape_cin(pressure, temp, dewpt)
-                            #look into using surface based data for this value
                             sb_CAPE, sb_CIN = mpcalc.surface_based_cape_cin(pressure, temp, dewpt)
                             mu_CAPE, mu_CIN = mpcalc.most_unstable_cape_cin(pressure, temp, dewpt)
+                            
+                            u = ds_press.variables['u'][time, :, lat_idx, long_idx]
+                            v = ds_press.variables['v'][time, :, lat_idx, long_idx]
+                            z = ds_press.variables['z'][time, :, lat_idx, long_idx]
 
-                            #geopotential height depth = 3000 * meters
-                            #height_agl = geopotential_height - geopotential_height[0] //surface value
-                            #blk_shear_0to3km = mpcalc.bulk_shear()
+                            u_wind = u.filled(np.nan) * units('m/s')
+                            v_wind = v.filled(np.nan) * units('m/s')
+                            geopotential = z.filled(np.nan) / 9.80665
+                            geopotential_height = geopotential * units('m')
+                            geopotential_agl = geopotential_height - geopotential_height[0]
 
+                            u_shear_0to3km, v_shear_0to3km = mpcalc.bulk_shear(
+                                pressure, 
+                                u_wind, 
+                                v_wind, 
+                                height = geopotential_agl, 
+                                bottom = 0 * units.m, 
+                                depth = 3000 * units.m
+                            )
+
+                            bulk_shear_0to3km = np.sqrt(u_shear_0to3km**2 + v_shear_0to3km**2)
+                            
+                            u_shear_0to6km, v_shear_0to6km = mpcalc.bulk_shear(
+                                pressure,
+                                u_wind, 
+                                v_wind,
+                                height = geopotential_agl,
+                                bottom = 0 * units.m,
+                                depth = 6000 * units.m
+                            )
+
+                            bulk_shear_0to6km = np.sqrt(u_shear_0to6km**2 + v_shear_0to6km**2)
+
+                            (u_storm, v_storm), *_ = mpcalc.bunkers_storm_motion(pressure, u_wind, v_wind, geopotential_agl)
+                            *_, total_helicity = mpcalc.storm_relative_helicity(geopotential_agl, u_wind, v_wind, depth=1000 * units('m'), storm_u= u_storm, storm_v= v_storm)
+                            
+                            t_avg = (t2m + (lcl_temp.to('kelvin'))) / 2
+                            lcl_height =  (287 * units('(m**2/s**2) / kelvin')) * t_avg
+                            lcl_height = lcl_height / (9.81 * units('m/s**2'))
+                            log_temp = sp / lcl_press
+                            log_temp = math.log(log_temp)
+                            lcl_height = lcl_height * log_temp
+
+                            sig_tor_parameter = mpcalc.significant_tornado(sb_CAPE, lcl_height, total_helicity, bulk_shear_0to6km)
+
+                            #eib_pressure, eit_pressure = effective_layer(pressure, temp, dewpt, geopotential_agl)
+                            #
+                            #if eib_pressure is None or eit_pressure is None:
+                            #    scp = 0
+                            #else:
+                            #    u_eff_shear, v_eff_shear = mpcalc.bulk_shear(
+                            #    pressure,
+                            #    u_wind,
+                            #    v_wind, 
+                            #    height = geopotential_agl,
+                            #    bottom = eib_pressure,
+                            #    depth = eit_pressure - eib_pressure
+                            #    )
+
+                            #    effective_bulk_shear = np.sqrt(u_eff_shear**2 + v_eff_shear**2)
+
+                            #    *_, effective_srh = mpcalc.storm_relative_helicity(geopotential_agl, u_wind, v_wind, depth= eit_pressure - eib_pressure, storm_u = u_storm, storm_v = v_storm)
+                            #    supercell_composite = mpcalc.supercell_composite(mu_CAPE, effective_bulk_shear, effective_srh)
+
+                            pwat_array[time, lat_idx, long_idx] = pwat.magnitude
+                            dewpt_array[time, lat_idx, long_idx, :] = dewpt.magnitude
+                            lfc_array[time, lat_idx, long_idx] = (lfc_press.magnitude, lfc_temp.magnitude)
+                            lcl_array[time, lat_idx, long_idx] = (lcl_press.magnitude, lcl_temp.magnitude)
+                            lapse_rates_array[time, lat_idx, long_idx, :] = lapse_rates.magnitude
+                            showalter_idx_array[time, lat_idx, long_idx] = showalter_idx.magnitude
+                            ml_CAPE_CIN_array[time, lat_idx, long_idx] = (ml_CAPE.magnitude, ml_CIN.magnitude)
+                            sb_CAPE_CIN_array[time, lat_idx, long_idx] = (sb_CAPE.magnitude, sb_CIN.magnitude)
+                            mu_CAPE_CIN_array[time, lat_idx, long_idx] = (mu_CAPE.magnitude, mu_CIN.magnitude)
+                            bulk_shear_0to3km_array[time, lat_idx, long_idx] = bulk_shear_0to3km.magnitude
+                            bulk_shear_0to6km_array[time, lat_idx, long_idx] = bulk_shear_0to6km.magnitude
+                            srh_array[time, lat_idx, long_idx] = total_helicity.magnitude
+                            sig_tor_array[time, lat_idx, long_idx] = sig_tor_parameter.magnitude
+                            #supercell_array[time, lat_idx, long_idx] = supercell_composite.magnitude
 
 
 
