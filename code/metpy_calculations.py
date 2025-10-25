@@ -88,7 +88,7 @@ def calculate_era5():
     supercell_array = np.zeros((n_times, n_lat, n_long))
 
     for year in range(1980, 1981):
-        for month in range(1, 2):
+        for month in range(1, 13):
             days_in_month = calendar.monthrange(year, month)[1]
             print(f"Month is: {month}")
             for day in range(1, days_in_month + 1):
@@ -113,7 +113,9 @@ def calculate_era5():
                 for time in range(0, 24):
                     print(f"Time is: {time}")
                     for lat_idx in range(0, 14):
+                        print(f"Latitude Index is: {lat_idx}")
                         for(long_idx) in range(0, 35):
+                            print(f"Longitude Index is: {long_idx}")
                             
                             p = ds_press.variables['pressure_level'][:]
                             sp = (ds_sur.variables['sp'][time, lat_idx, long_idx] / 100) * units.hPa
@@ -183,24 +185,22 @@ def calculate_era5():
 
                             sig_tor_parameter = mpcalc.significant_tornado(sb_CAPE, lcl_height, total_helicity, bulk_shear_0to6km)
 
-                            #eib_pressure, eit_pressure = effective_layer(pressure, temp, dewpt, geopotential_agl)
-                            #
-                            #if eib_pressure is None or eit_pressure is None:
-                            #    scp = 0
-                            #else:
-                            #    u_eff_shear, v_eff_shear = mpcalc.bulk_shear(
-                            #    pressure,
-                            #    u_wind,
-                            #    v_wind, 
-                            #    height = geopotential_agl,
-                            #    bottom = eib_pressure,
-                            #    depth = eit_pressure - eib_pressure
-                            #    )
-
-                            #    effective_bulk_shear = np.sqrt(u_eff_shear**2 + v_eff_shear**2)
-
-                            #    *_, effective_srh = mpcalc.storm_relative_helicity(geopotential_agl, u_wind, v_wind, depth= eit_pressure - eib_pressure, storm_u = u_storm, storm_v = v_storm)
-                            #    supercell_composite = mpcalc.supercell_composite(mu_CAPE, effective_bulk_shear, effective_srh)
+                            eib_pressure, eit_pressure = effective_layer(pressure, temp, dewpt, geopotential_agl)
+                            
+                            if eib_pressure is None or eit_pressure is None:
+                                supercell_composite = 0 * units.dimensionless
+                            else:
+                                u_eff_shear, v_eff_shear = mpcalc.bulk_shear(
+                                pressure,
+                                u_wind,
+                                v_wind, 
+                                height = geopotential_agl,
+                                bottom = eib_pressure,
+                                depth = eit_pressure - eib_pressure
+                                )
+                                effective_bulk_shear = np.sqrt(u_eff_shear**2 + v_eff_shear**2)
+                                *_, effective_srh = mpcalc.storm_relative_helicity(geopotential_agl, u_wind, v_wind, depth= eit_pressure - eib_pressure, storm_u = u_storm, storm_v = v_storm)
+                                supercell_composite = mpcalc.supercell_composite(mu_CAPE, effective_bulk_shear, effective_srh)
 
                             pwat_array[time, lat_idx, long_idx] = pwat.magnitude
                             dewpt_array[time, lat_idx, long_idx, :] = dewpt.magnitude
@@ -215,16 +215,23 @@ def calculate_era5():
                             bulk_shear_0to6km_array[time, lat_idx, long_idx] = bulk_shear_0to6km.magnitude
                             srh_array[time, lat_idx, long_idx] = total_helicity.magnitude
                             sig_tor_array[time, lat_idx, long_idx] = sig_tor_parameter.magnitude
-                            #supercell_array[time, lat_idx, long_idx] = supercell_composite.magnitude
+                            supercell_array[time, lat_idx, long_idx] = supercell_composite.magnitude
 
 
-
+def calculate_hrrr():
     #code goes here
-    print("era5 data yayyyyy")
+    press_path = f"C:/Users/lwojd/Data/hrrr/pressure/2016/01/hrrr_press_20160101.nc"
+    ds = Dataset(press_path, 'r')
 
-def calculate_hrrr(data):
-    #code goes here
-    print("hrrr data lets fucking goooo")
+    #['t', 'u', 'v', 'gh', 'dpt', 'time_val', 'time', 'step', 'isobaricInhPa', 'latitude', 'longitude', 'valid_time', 'gribfile_projection']
+    # Open your saved file
+    
+    # Check shape of latitude/longitude
+
+    t = ds.variables['t'][:]
+    temp = t.filled(np.nan) * units.kelvin
+    print(temp.shape)
 
 
-calculate_era5()
+#calculate_era5()
+calculate_hrrr()

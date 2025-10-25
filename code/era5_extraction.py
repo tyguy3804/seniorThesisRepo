@@ -32,6 +32,7 @@ for year in range(1980, 2016):
             os.makedirs(press_dir, exist_ok=True)
             os.makedirs(sur_dir, exist_ok=True)
 
+
             press_file = f"{press_dir}/era5_press_{year}{month:02d}{day:02d}.nc"
             sur_file = f"{sur_dir}/era5_sur_{year}{month:02d}{day:02d}.nc"
 
@@ -74,13 +75,8 @@ for year in range(1980, 2016):
             surface_request = {
                 "product_type": "reanalysis",
                 "variable": [
-                    "10m_u_component_of_wind",
-                    "10m_v_component_of_wind",
-                    "2m_dewpoint_temperature",
                     "2m_temperature",
-                    "mean_sea_level_pressure",
                     "surface_pressure",
-                    "total_precipitation",
                 ],
                 "year": f"{year}",
                 "month": f"{month}",

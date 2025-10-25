@@ -38,60 +38,60 @@ The most challenging part so far was figuring out how HRRR extraction worked and
 
 ---
 
-## Week 3 Summary (MM/DD/YYYY)
+## Week 3 Summary (10/06/2025)
 ### This week I worked on:
 
-[Your answer here]
+Continued working on my metpy calculations mainly for era5 data. Also continued downloading data for both HRRR and ERA5.
 
 ### This week I learned:
 
-[Your answer here]
+Learned a lot about how to use the metpy library and also how I wanted to somewhat format my dataset for my model. Needed to experiment with my data variables from the era5 data so that they could be used in the metpy functions.
 
 ### My successes this week were:
 
-[Your answer here]
+Continued to extract data and started to look in the future towards how I want my calculated and model-ready data to look like.
 
 ### The challenges I faced this week were:
 
-[Your answer here]
+Learning a new library of functions and making sure that I would get the correct outputs.
 
 ---
 
-## Week 4 Summary (MM/DD/YYYY)
+## Week 4 Summary (10/13/2025)
 ### This week I worked on:
 
-[Your answer here]
+Completed working on metpy calculations for era5 data. 
 
 ### This week I learned:
 
-[Your answer here]
+More about the metpy library
 
 ### My successes this week were:
 
-[Your answer here]
+Getting closer to having all my data and being able to make some important calculations that I will be using for my model.
 
 ### The challenges I faced this week were:
 
-[Your answer here]
+Trying to tinker with metpy calculations and also collecting those outputs for all era5 data that I have.
 
 ---
 
-## Week 5 Summary (MM/DD/YYYY)
+## Week 5 Summary (10/20/2025)
 ### This week I worked on:
 
-[Your answer here]
+Started working on calculations for hrrr data (mostly the same as era5 but some slight differences). Made tweaks to my hrrr data extraction program.
 
 ### This week I learned:
 
-[Your answer here]
+That some values that I have extracted weren't neccessary for any calculations. They didn't take up much space or time so not too much to worry about. I also learned that the regular expressions I have been using to tell Herbie, the hrrr data extractor, weren't working properly and left out some data. (For example, it left out temperature and dewpoint data and also didn't use the correct pressure values too.)
 
 ### My successes this week were:
 
-[Your answer here]
+Continued to extract era5 data.
 
 ### The challenges I faced this week were:
 
-[Your answer here]
+I needed to re-extract all my hrrr data because of mutiple reasons. I should have checked sooner but since I started looking at using hrrr data for my calculations I noticed that the data just wasn't right and noticed the mistakes.
 
 ---
 
