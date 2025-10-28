@@ -20,7 +20,7 @@ lon_min, lon_max = 257, 266  # -103° and -94° converted to 0-360°
 TARGET_LAT_POINTS = 14
 TARGET_LONG_POINTS = 35
 
-for year in range(2016, 2019):
+for year in range(2017, 2023):
     for month in range(1, 13):
         daysInMonth = calendar.monthrange(year, month)[1]
 
@@ -101,12 +101,6 @@ for year in range(2016, 2019):
 
                     temp_coarse = temp_subset.coarsen(x= coarsen_x, y= coarsen_y, boundary= 'trim').mean()
                     pressure_coarse = pressure_subset.coarsen(x= coarsen_x, y= coarsen_y, boundary= 'trim').mean()
-
-                    #print("Original shape:", temp_subset.sizes)
-                    #print("Coarsened shape:", temp_coarse.sizes)
-                    print("\nLat/lon coordinates are preserved:")
-                    print("Lat shape:", temp_coarse['latitude'].shape)
-                    print("Lon shape:", temp_coarse['longitude'].shape)
 
                     # Check if we got data
                     if temp_coarse.sizes.get('y', pressure_coarse.sizes.get('x', 0)) > 0:

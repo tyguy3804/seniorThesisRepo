@@ -87,7 +87,7 @@ That some values that I have extracted weren't neccessary for any calculations. 
 
 ### My successes this week were:
 
-Continued to extract era5 data.
+Continued to extract era5 data. Have my calculation program completed aside for some tweaks that I will fix when I have all my data.
 
 ### The challenges I faced this week were:
 
@@ -95,7 +95,7 @@ I needed to re-extract all my hrrr data because of mutiple reasons. I should hav
 
 ---
 
-## Week 6 Summary (MM/DD/YYYY)
+## Week 6 Summary (10/27/2025)
 ### This week I worked on:
 
 [Your answer here]

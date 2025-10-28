@@ -92,6 +92,9 @@ The following sections detail the specific use cases that the model will support
 3. Model makes a new prediction based on new data.
 
 **Alternative Courses**:
+-**Step 1**: Error collecting most recent data
+- 1. Model gives an error stating that the data could not be extracted at the moment.
+- 2. Model waits a set amount of time and re-attempts to collect the data.
 
 ### Use Case 1.4: Download Prediction
 
@@ -108,4 +111,6 @@ The following sections detail the specific use cases that the model will support
 -**Step 1**: Invalid date
 - 1. Model gives an error based on where the date or time becomes invalid (ex: "Day in month doesn't exist (31st of September) or "Please enter a year within 1980 and 2025").
 - 2. Model repromtps the user.
-- **Step 2**: 
+- **Step 2**: Model does not have data for that date
+- 1. Model gives an error stating that the data could not be found for that specific date.
+- 2. Model reprompts the user.
