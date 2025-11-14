@@ -20,7 +20,7 @@ lon_min, lon_max = 257, 266  # -103° and -94° converted to 0-360°
 TARGET_LAT_POINTS = 14
 TARGET_LONG_POINTS = 35
 
-for year in range(2017, 2023):
+for year in range(2018, 2023):
     for month in range(1, 13):
         daysInMonth = calendar.monthrange(year, month)[1]
 
@@ -96,6 +96,7 @@ for year in range(2017, 2023):
                     temp_subset = temp.where(temp_mask, drop=True)
                     pressure_subset = pressure.where(press_mask, drop=True)
 
+                    #drop the amount of lat/long points to be accurate with era5 lat/lon points of 14x35
                     coarsen_y = temp_subset.sizes['y'] // 14
                     coarsen_x = temp_subset.sizes['x'] // 35
 
@@ -115,9 +116,11 @@ for year in range(2017, 2023):
             
             # Concatenate and save
             if all_temp_data and all_press_data:
+                
+                complete_datasets = [ds for ds in all_press_data if len(ds.isobaricInhPa) == 11]
                 print(f"Concatenating {len(all_temp_data)} time steps for {year}-{month:02d}-{day:02d}...")
                 temp_dataset = xr.concat(all_temp_data, dim="time_val")
-                pressure_dataset = xr.concat(all_press_data, dim="time_val")
+                pressure_dataset = xr.concat(complete_datasets, dim="time_val")
 
                 # Clean attributes before saving
                 for ds in [temp_dataset, pressure_dataset]:

@@ -114,7 +114,7 @@ I needed to re-extract all my hrrr data because of mutiple reasons. I should hav
 
 ---
 
-## Week 7 Summary (MM/DD/YYYY)
+## Week 7 Summary (11/03/2025)
 ### This week I worked on:
 
 [Your answer here]

@@ -7,12 +7,6 @@ import calendar
 import os
 import zipfile
 import math
-
-#data[time_index, pressure_level_index, latitude_index, longitude_index]
-#time_index = 0-23 for all 24 hours of data
-#pressure_level_index = 0-10 for all 11 pressure levels
-#latitude_index = north to south (most likely use a : for all levles)
-#longitude_index = east to west(use :)
     
 #**Taken from this source https://unidata.github.io/MetPy/latest/examples/calculations/Sounding_Calculations.html#sphx-glr-examples-calculations-sounding-calculations-py**
 def effective_layer(p, t, td, h, height_layer=False):
@@ -191,7 +185,7 @@ def hrrr_calculate_ml_CAPE_CIN(ds_press, ds_sur, time, lat_idx, long_idx):
 
 def hrrr_calculate_sb_CAPE_CIN(ds_press, ds_sur, time, lat_idx, long_idx):
     data = get_hrrr_variables(ds_press, ds_sur, time, lat_idx, long_idx, variables= ['pressure', 'dewpt', 'temp']) 
-    
+
     pressure = data['pressure']
     temp = data['temp']
     dewpt = data['dewpt']
@@ -224,7 +218,7 @@ def hrrr_calculate_bulk_shear(ds_press, ds_sur, time, lat_idx, long_idx, depth_m
     v_wind = data['v_wind']
     geo_agl = data['geopotential_agl']
 
-    u_shear, v_shear = mpcalc.bulk(
+    u_shear, v_shear = mpcalc.bulk_shear(
         pressure,
         u_wind,
         v_wind,
@@ -392,6 +386,7 @@ def era5_calculate_lfc(ds_press, ds_sur, time, lat_idx, long_idx):
     dewpt = data['dewpt']
 
     lfc_press, lfc_temp = mpcalc.lfc(pressure, temp, dewpt)
+    return lfc_press, lfc_temp
 
 def era5_calculate_lapse_rates(ds_press, ds_sur, time, lat_idx, long_idx):
     data = get_era5_variables(ds_press, ds_sur, time, lat_idx, long_idx, variables= ['pressure', 'dewpt', 'temp']) 
@@ -401,6 +396,7 @@ def era5_calculate_lapse_rates(ds_press, ds_sur, time, lat_idx, long_idx):
     dewpt = data['dewpt']
 
     lapse_rates = mpcalc.dry_lapse(pressure, temp[0]).to('degC')
+
     return lapse_rates
 
 def era5_calculate_showalter_idx(ds_press, ds_sur, time, lat_idx, long_idx):
@@ -411,6 +407,7 @@ def era5_calculate_showalter_idx(ds_press, ds_sur, time, lat_idx, long_idx):
     dewpt = data['dewpt']
 
     showalter_idx = mpcalc.showalter_index(pressure, temp, dewpt)
+
     return showalter_idx
 
 def era5_calculate_ml_CAPE_CIN(ds_press, ds_sur, time, lat_idx, long_idx):
@@ -422,6 +419,8 @@ def era5_calculate_ml_CAPE_CIN(ds_press, ds_sur, time, lat_idx, long_idx):
 
     ml_CAPE, ml_CIN = mpcalc.mixed_layer_cape_cin(pressure, temp, dewpt)
 
+    return ml_CAPE, ml_CIN
+
 def era5_calculate_sb_CAPE_CIN(ds_press, ds_sur, time, lat_idx, long_idx):
     data = get_era5_variables(ds_press, ds_sur, time, lat_idx, long_idx, variables= ['pressure', 'dewpt', 'temp']) 
     
@@ -430,6 +429,8 @@ def era5_calculate_sb_CAPE_CIN(ds_press, ds_sur, time, lat_idx, long_idx):
     dewpt = data['dewpt']
 
     sb_CAPE, sb_CIN = mpcalc.surface_based_cape_cin(pressure, temp, dewpt)
+
+    return sb_CAPE, sb_CIN
 
 def era5_calculate_mu_CAPE_CIN(ds_press, ds_sur, time, lat_idx, long_idx):
     data = get_era5_variables(ds_press, ds_sur, time, lat_idx, long_idx, variables= ['pressure', 'dewpt', 'temp']) 
@@ -440,6 +441,7 @@ def era5_calculate_mu_CAPE_CIN(ds_press, ds_sur, time, lat_idx, long_idx):
 
     mu_CAPE, mu_CIN = mpcalc.most_unstable_cape_cin(pressure, temp, dewpt)
 
+    return mu_CAPE, mu_CIN
 
 def era5_calculate_bulk_shear(ds_press, ds_sur, time, lat_idx, long_idx, depth_m):
     data = get_era5_variables(ds_press, ds_sur, time, lat_idx, long_idx, variables= ['pressure', 'u_wind', 'v_wind', 'geopotential_agl'])
@@ -449,7 +451,7 @@ def era5_calculate_bulk_shear(ds_press, ds_sur, time, lat_idx, long_idx, depth_m
     v_wind = data['v_wind']
     geo_agl = data['geopotential_agl']
 
-    u_shear, v_shear = mpcalc.bulk(
+    u_shear, v_shear = mpcalc.bulk_shear(
         pressure,
         u_wind,
         v_wind,
@@ -459,6 +461,7 @@ def era5_calculate_bulk_shear(ds_press, ds_sur, time, lat_idx, long_idx, depth_m
     )
 
     bulk_shear = np.sqrt(u_shear**2 + v_shear**2)
+
     return bulk_shear
 
 def era5_calculate_srh(ds_press, ds_sur, time, lat_idx, long_idx):
@@ -478,6 +481,7 @@ def era5_calculate_srh(ds_press, ds_sur, time, lat_idx, long_idx):
         storm_u= u_storm,
         storm_v= v_storm
     )
+
     return total_helicity
 
 def era5_calculate_sig_tor(ds_press, ds_sur, time, lat_idx, long_idx, sb_CAPE, lcl_press, lcl_temp, total_helicity, bulk_shear_0to6km):
@@ -494,6 +498,7 @@ def era5_calculate_sig_tor(ds_press, ds_sur, time, lat_idx, long_idx, sb_CAPE, l
     lcl_height = lcl_height * log_temp
 
     sig_tor_parameter = mpcalc.significant_tornado(sb_CAPE, lcl_height, total_helicity, bulk_shear_0to6km)
+
     return sig_tor_parameter
 
 def era5_calculate_supercell_comp(ds_press, ds_sur, time, lat_idx, long_idx, mu_CAPE):
@@ -533,5 +538,6 @@ def era5_calculate_supercell_comp(ds_press, ds_sur, time, lat_idx, long_idx, mu_
         )
 
         supercell_comp = mpcalc.supercell_composite(mu_CAPE, effective_bulk_shear, effective_srh)
+
         return supercell_comp
 

@@ -8,12 +8,35 @@ output: html_document
 ```{r}
 library(tidyverse)
 
+setwd("C:/Users/lwojd/Vs Projects/seniorThesisRepo/code/R Studio/stormReports")
 getwd()
 
+#keep begin_day, year, month_name, event_type, tor_f_scale, begin_lat, begin_long
 
-#stormReportsOK <- StormEvents_d1985 %>%
-#  filter(STATE == "OKLAHOMA") %>%
-#  arrange(END_YEARMONTH) %>%
+files <- list.files(pattern = "*.csv", full.names = TRUE)
+  
+files %>%
+  map (~ {
+    df <- read_csv(.x)
+    
+    df <- df %>%
+      filter(STATE == "OKLAHOMA") %>%
+      arrange(BEGIN_YEARMONTH) %>%
+      mutate(
+        BEGIN_TIME = str_pad(BEGIN_TIME, width = 4, side = "left", pad = "0"),
+        BEGIN_HOUR = str_sub(BEGIN_TIME, 1, 2),
+        BEGIN_DAY = str_pad(BEGIN_DAY, width = 2, side = "left", pad = "0"),
+        formatted_yearMonth = paste(str_sub(BEGIN_YEARMONTH, 1, 4), str_sub(BEGIN_YEARMONTH, 5, 6), sep = "-"),
+        full_date = paste(formatted_yearMonth, BEGIN_DAY, sep = "-")
+        ) %>%
+      select(full_date, BEGIN_HOUR, EVENT_TYPE, TOR_F_SCALE, BEGIN_LAT, BEGIN_LON) 
+      
+    
+    new_name <- str_replace(.x, ".csv", "_oklahoma.csv")
+    
+    write_csv(df, new_name)
+  })
+
   
  
 ```

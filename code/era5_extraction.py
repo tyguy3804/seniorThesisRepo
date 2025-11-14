@@ -1,25 +1,10 @@
 import os, calendar
 import xarray as xr
 import cdsapi
-from metpy.calc import mixing_ratio, dewpoint_from_specific_humidity, lcl, cape_cin, parcel_profile, storm_relative_helicity, wind_components
 
 
 #####ERA5 Data Extraction#####
 
-#start looping through each year 1980-2015
-#inside the year loop, start looping through each month
-#inside the month loop, start looping through each day in the month
-
-#in the file system there should be two folders (pressure and surface)
-#then there should be subdirectories for each year and all twelve months within that year
-#inside the month subdirectory will be all .nc files for each day in that month
-
-#***IMPORTANT HOLES IN DATA EXTRACTION***
-#Surface Level data: No data for 1980, 1981, 1982
-#Pressure Level data: Data up until 12/08/1982
-#Unfinished Data extraction for 1983
-
-#last file extracted: 10/18/1982
 for year in range(1980, 2016):
     for month in range(1, 13):
         daysInMonth = calendar.monthrange(year, month)[1]
