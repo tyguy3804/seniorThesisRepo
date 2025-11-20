@@ -510,11 +510,13 @@ def era5_calculate_supercell_comp(ds_press, ds_sur, time, lat_idx, long_idx, mu_
     u_wind = data['u_wind']
     v_wind = data['v_wind']
     geo_agl = data['geopotential_agl']
-
+    print("here")
     eib_pressure, eit_pressure = effective_layer(pressure, temp, dewpt, geo_agl)
-
+    print("not here?")
     if eib_pressure is None or eit_pressure is None:
         supercell_comp = 0 * units.dimensionless
+
+        return supercell_comp
     else:
         u_eff_shear, v_eff_shear = mpcalc.bulk_shear(
             pressure,
@@ -538,6 +540,6 @@ def era5_calculate_supercell_comp(ds_press, ds_sur, time, lat_idx, long_idx, mu_
         )
 
         supercell_comp = mpcalc.supercell_composite(mu_CAPE, effective_bulk_shear, effective_srh)
-
+        
         return supercell_comp
 

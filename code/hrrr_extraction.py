@@ -1,4 +1,5 @@
 from herbie import Herbie
+import numpy as np
 import xarray as xr
 import os, calendar
 import warnings
@@ -19,6 +20,9 @@ lon_min, lon_max = 257, 266  # -103° and -94° converted to 0-360°
 
 TARGET_LAT_POINTS = 14
 TARGET_LONG_POINTS = 35
+
+target_lats = np.linspace(lat_min, lat_max, TARGET_LAT_POINTS)
+target_lons = np.linspace(lon_min, lon_max, TARGET_LONG_POINTS)
 
 for year in range(2018, 2023):
     for month in range(1, 13):
@@ -96,17 +100,13 @@ for year in range(2018, 2023):
                     temp_subset = temp.where(temp_mask, drop=True)
                     pressure_subset = pressure.where(press_mask, drop=True)
 
-                    #drop the amount of lat/long points to be accurate with era5 lat/lon points of 14x35
-                    coarsen_y = temp_subset.sizes['y'] // 14
-                    coarsen_x = temp_subset.sizes['x'] // 35
-
-                    temp_coarse = temp_subset.coarsen(x= coarsen_x, y= coarsen_y, boundary= 'trim').mean()
-                    pressure_coarse = pressure_subset.coarsen(x= coarsen_x, y= coarsen_y, boundary= 'trim').mean()
+                    temp_regrid = temp_subset.interp(latitude= target_lats, longitude= target_lons, method= 'linear')
+                    pressure_regrid = temp_subset.interp(latitude= target_lats, longitude= target_lons, method='linear')
 
                     # Check if we got data
-                    if temp_coarse.sizes.get('y', pressure_coarse.sizes.get('x', 0)) > 0:
-                        all_temp_data.append(temp_coarse)
-                        all_press_data.append(pressure_coarse)
+                    if temp_regrid.sizes.get('y', pressure_regrid.sizes.get('x', 0)) > 0:
+                        all_temp_data.append(temp_regrid)
+                        all_press_data.append(pressure_regrid)
                         print(f"{year}-{month:02d}-{day:02d} {time:02d}:00 - Success")
                     else:
                         print(f"{year}-{month:02d}-{day:02d} {time:02d}:00 - No data in region")
