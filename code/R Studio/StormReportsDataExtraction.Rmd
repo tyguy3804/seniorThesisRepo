@@ -21,20 +21,25 @@ files %>%
     
     df <- df %>%
       filter(STATE == "OKLAHOMA") %>%
+      filter(EVENT_TYPE %in% c("Hail", "Tornado", "Heavy Rain", "Funnel Cloud", "Thunderstorm Wind")) %>%
       arrange(BEGIN_YEARMONTH) %>%
       mutate(
         BEGIN_TIME = str_pad(BEGIN_TIME, width = 4, side = "left", pad = "0"),
         BEGIN_HOUR = str_sub(BEGIN_TIME, 1, 2),
         BEGIN_DAY = str_pad(BEGIN_DAY, width = 2, side = "left", pad = "0"),
-        formatted_yearMonth = paste(str_sub(BEGIN_YEARMONTH, 1, 4), str_sub(BEGIN_YEARMONTH, 5, 6), sep = "-"),
-        full_date = paste(formatted_yearMonth, BEGIN_DAY, sep = "-")
+        BEGIN_MONTH = str_sub(BEGIN_YEARMONTH, 5, 6),
+        DATE = paste(YEAR, BEGIN_MONTH, BEGIN_DAY, sep = "-"),
+        LAT_IDX = as.integer( (BEGIN_LAT - 33.6) / 0.25),
+        LON_IDX = as.integer( (-103 - BEGIN_LON) / -0.25)
         ) %>%
-      select(full_date, BEGIN_HOUR, EVENT_TYPE, TOR_F_SCALE, BEGIN_LAT, BEGIN_LON) 
+      arrange(BEGIN_MONTH, BEGIN_DAY, BEGIN_HOUR) %>%
+      select(DATE, BEGIN_MONTH, BEGIN_DAY, BEGIN_HOUR, EVENT_TYPE, TOR_F_SCALE, LAT_IDX, LON_IDX )
       
+    df_unique <- df %>% distinct()
     
     new_name <- str_replace(.x, ".csv", "_oklahoma.csv")
     
-    write_csv(df, new_name)
+    write_csv(df_unique, new_name)
   })
 
   

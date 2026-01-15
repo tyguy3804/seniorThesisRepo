@@ -12,46 +12,12 @@ import os
 import traceback
 
 ##** Don't forget to include storm report data as well
-def era5_find_closest_lat_lon(report_lat, report_lon, ds_lat, ds_lon):
 
-    temp_diff_lat = 0.0
-    temp_diff_lon = 0.0
-    lat_idx = 0
-    lon_idx = 0
-    return_lat = 0
-    return_lon = 0
-
-    for lat in ds_lat:
-        lat_diff = abs(report_lat - lat)
-
-        if lat_idx == 0:
-            temp_diff_lat = lat_diff
-        else:
-            if lat_diff < temp_diff_lat:
-                temp_diff_lat = lat_diff
-                return_lat = lat_idx 
-
-        lat_idx += 1
-
-    for lon in ds_lon:
-        lon_diff = abs(report_lon - lon)
-
-        if lon_idx == 0:
-            temp_diff_lon = lon_diff
-        else:
-            if lon_diff < temp_diff_lon:
-                temp_diff_lon = lon_diff
-                return_lon = lon_idx
-
-        lon_idx += 1
-
-    return return_lat, return_lon
-
-def find_storm_reports(date, storm_reports):
+def find_storm_reports(month, storm_reports):
     all_reports = []
 
     for row in storm_reports.iloc():
-        if date == row['full_date']:
+        if month == row['BEGIN_MONTH']:
             all_reports.append(row)
 
     return all_reports
@@ -67,9 +33,10 @@ def convert_cyclical_encoded(original_num, num_values, cos_or_sine):
 
     return retVal
 
-def process_month(monthIdx, year, storm_reports):
+def process_month(monthIdx, year, storm_reports_for_month):
+
     if os.path.exists(f"C:/Users/lwojd/Data/metpyCalc/featureData/{year}/{monthIdx:02d}/features{monthIdx:02d}_{year}.parquet") and os.path.exists(f"C:/Users/lwojd/Data/metpyCalc/labelData/{year}/{monthIdx:02d}/labels{monthIdx:02d}_{year}.parquet"):
-            print(f"Year: {year} already processed, skipping...")
+            print(f"Month: {monthIdx} Year: {year} already processed, skipping...")
             return year, "skipped"
     else:
         os.makedirs(f"C:/Users/lwojd/Data/metpyCalc/featureData/{year}/{monthIdx:02d}", exist_ok= True)
@@ -88,45 +55,47 @@ def process_month(monthIdx, year, storm_reports):
     current_date = start_date
 
     while current_date <= end_date:
+        
         press_path = f"C:/Users/lwojd/Data/era5/pressure/{current_date.year}/{current_date.month:02d}/era5_press_{current_date.year}{current_date.month:02d}{current_date.day:02d}.nc"
         sur_path = f"C:/Users/lwojd/Data/era5/surface/{current_date.year}/{current_date.month:02d}/era5_sur_{current_date.year}{current_date.month:02d}{current_date.day:02d}.nc"
 
         ds_press = Dataset(press_path, 'r')
         ds_sur = Dataset(sur_path, 'r')
 
-        all_reports = find_storm_reports(current_date.strftime('%Y-%m-%d'), storm_reports)
-        reports_idx = 0
+        storm_reports_idx = 0
+        found_report = False
 
         for time in range(0, 24):
             for lat_idx in range(0,14):
                 for lon_idx in range(0,35):
+
+                    date = current_date.strftime("%Y-%m-%d")
                     
-                    if len(all_reports) != 0 and reports_idx < len(all_reports):
-                        if time == all_reports[reports_idx]['BEGIN_HOUR']:
+                    if storm_reports_for_month:   
+                        if date == storm_reports_for_month[storm_reports_idx]['DATE']:
+                            if time == storm_reports_for_month[storm_reports_idx]['BEGIN_HOUR']:
+                                if lat_idx == storm_reports_for_month[storm_reports_idx]['LAT_IDX']:
+                                    if lon_idx == storm_reports_for_month[storm_reports_idx]['LON_IDX']:
+                                        report_event = storm_reports_for_month[storm_reports_idx]['EVENT_TYPE']
 
-                            report_lat, report_lon = era5_find_closest_lat_lon(
-                                all_reports[reports_idx]['BEGIN_LAT'], 
-                                all_reports[reports_idx]['BEGIN_LON'], 
-                                ds_press.variables['latitude'][:], 
-                                ds_press.variables['longitude'][:]
-                                )
+                                        if math.isnan(storm_reports_for_month[storm_reports_idx]['TOR_F_SCALE']):
+                                            report_tor_f_scale = "N/A"
+                                        else:
+                                            report_tor_f_scale = storm_reports_for_month[storm_reports_idx]['TOR_F_SCALE']
 
-                            if lat_idx == report_lat and lon_idx == report_lon:
-                                report_event = all_reports[reports_idx]['EVENT_TYPE']
-                                report_tor_f_scale = all_reports[reports_idx]['TOR_F_SCALE']
-                                lat = all_reports[reports_idx]['BEGIN_LAT']
-                                lon = all_reports[reports_idx]['BEGIN_LON']
-                                reports_idx += 1
-                        else:
-                            report_event = "NA"
-                            report_tor_f_scale = "NA"
-                            lat = "NA"
-                            lon = "NA"
-                    else:
-                        report_event = "N/A"
-                        report_tor_f_scale = "N/A"
-                        lat = "N/A"
-                        lon = "N/A"
+                                        lat = lat_idx
+                                        lon = lon_idx
+
+                                        found_report = True
+                                        storm_reports_idx += 1
+
+                    if found_report == False:
+                        report_event = 'N/A'
+                        report_tor_f_scale = 'N/A'
+                        lat = 'N/A'
+                        lon = 'N/A'
+                    
+
 
                     sb_CAPE, sb_CIN = metpy_calculations.era5_calculate_sb_CAPE_CIN(ds_press, ds_sur, time, lat_idx, lon_idx)
                     lcl_press, lcl_temp = metpy_calculations.era5_calculate_lcl(ds_press, ds_sur, time, lat_idx, lon_idx)
@@ -142,6 +111,7 @@ def process_month(monthIdx, year, storm_reports):
                     sig_tor = metpy_calculations.era5_calculate_sig_tor(ds_press, ds_sur, time, lat_idx, lon_idx, sb_CAPE, lcl_press, lcl_temp, total_helicity, bulk_shear_0to6km)
                     #supercell_comp = metpy_calculations.era5_calculate_supercell_comp(ds_press, ds_sur, time, lat_idx, lon_idx, mu_CAPE)
 
+                
                     feature_row = {
                         'day_sin': convert_cyclical_encoded(current_date.timetuple().tm_yday, 365, "sin"),    
                         'day_cos': convert_cyclical_encoded(current_date.timetuple().tm_yday, 365, "cos"),
@@ -151,35 +121,37 @@ def process_month(monthIdx, year, storm_reports):
                         'hour_cos': convert_cyclical_encoded(time, 24, "cos"),
                         'lat_idx': lat_idx,
                         'long_idx': lon_idx,
-                        'pwat': pwat.dimensionless,
-                        'lcl_press': lcl_press.dimensionless,
-                        'lcl_temp': lcl_temp.dimensionless,
-                        'lfc_press': lfc_press.dimensionless,
-                        'lfc_temp': lfc_temp.dimensionless,
-                        'lapse_rates': lapse_rates.dimensionless,
-                        'showalter_idx': showalter_idx.dimensionless,
-                        'ml_CAPE': ml_CAPE.dimensionless,
-                        'ml_CIN':  ml_CIN.dimensionless,
-                        'sb_CAPE': sb_CAPE.dimensionless,
-                        'sb_CIN': sb_CIN.dimensionless,
-                        'mu_CAPE': mu_CAPE.dimensionless,
-                        'mu_CIN': mu_CIN.dimensionless,
-                        'bulk_shear_0to3km': bulk_shear_0to3km.dimensionless,
-                        'bulk_shear_0to6km': bulk_shear_0to6km.dimensionless,
-                        'srh': total_helicity.dimensionless,
-                        'sig_tor': sig_tor.dimensionless,
+                        'pwat': pwat.magnitude,
+                        'lcl_press': lcl_press.magnitude,
+                        'lcl_temp': lcl_temp.magnitude,
+                        'lfc_press': lfc_press.magnitude,
+                        'lfc_temp': lfc_temp.magnitude,
+                        'lapse_rates': lapse_rates.magnitude,
+                        'showalter_idx': showalter_idx.magnitude,
+                        'ml_CAPE': ml_CAPE.magnitude,
+                        'ml_CIN':  ml_CIN.magnitude,
+                        'sb_CAPE': sb_CAPE.magnitude,
+                        'sb_CIN': sb_CIN.magnitude,
+                        'mu_CAPE': mu_CAPE.magnitude,
+                        'mu_CIN': mu_CIN.magnitude,
+                        'bulk_shear_0to3km': bulk_shear_0to3km.magnitude,
+                        'bulk_shear_0to6km': bulk_shear_0to6km.magnitude,
+                        'srh': total_helicity.magnitude,
+                        'sig_tor': sig_tor.magnitude,
                         #'supercell_comp': supercell_comp,
                     }
 
                     label_row = {
+                        
                         'storm_event_type': report_event,
                         'tornado_mag': report_tor_f_scale,
                         'storm_lat': lat,
                         'storm_long': lon
                     }
-
+                    
                     feature_data_rows.append(feature_row)
                     label_data_rows.append(label_row)
+                    found_report = False
         
         current_date += timedelta(days=1)
     
@@ -191,7 +163,7 @@ def process_month(monthIdx, year, storm_reports):
                 compression='snappy',
                 index=False)
     df_labels['year'] = year
-    df_features.to_parquet(f"C:/Users/lwojd/Data/metpyCalc/labelData/{year}/{monthIdx:02d}/labels{monthIdx:02d}_{year}.parquet",
+    df_labels.to_parquet(f"C:/Users/lwojd/Data/metpyCalc/labelData/{year}/{monthIdx:02d}/labels{monthIdx:02d}_{year}.parquet",
                            compression= 'snappy',
                            index=False)
     
@@ -203,22 +175,22 @@ def process_year(year):
 
         for month in range(1, 13):
             try:
-                process_month(month, year, storm_reports)
+                storm_reports_for_month = find_storm_reports(month, storm_reports)
+                process_month(month, year, storm_reports_for_month)
             except Exception as e:
                 print(f"Error occured for month: {month} for year: {year}")
                 print("Full traceback:")
-                #traceback.print_exc()
+                traceback.print_exc()
         
-
 
 
 def generateprocesses():
         
     if __name__ == '__main__':
-        years = list(range(2006, 2016))
-        print(f"Starting processing of {len(years)} years with 10 processes...")
+        years = list(range(2007, 2012))
+        print(f"Starting processing of {len(years)} years with 5 processes...")
         try:
-            with Pool(processes=10) as pool:
+            with Pool(processes=5) as pool:
                 results = pool.map(process_year, years)
             # Summary
             success = sum(1 for _, status in results if status == "success")
@@ -235,3 +207,28 @@ def generateprocesses():
 
 
 generateprocesses()
+
+#storm_reports_path = f"C:/Users/lwojd/Data/stormReports/StormEvents_d2007_oklahoma.csv"
+#storm_reports = pd.read_csv(storm_reports_path)
+#
+#def find_report(storm_reports_for_month, storm_reports_idx, date, time, lat_idx, lon_idx):
+#    if date == storm_reports_for_month[storm_reports_idx]['DATE']:
+#        if time == storm_reports_for_month[storm_reports_idx]['BEGIN_HOUR']:
+#            if lat_idx == storm_reports_for_month[storm_reports_idx]['LAT_IDX']:
+#                if lon_idx == storm_reports_for_month[storm_reports_idx]['LON_IDX']:
+#                    report_event = storm_reports_for_month[storm_reports_idx]['EVENT_TYPE']
+#
+#                    if math.isnan(storm_reports_for_month[storm_reports_idx]['TOR_F_SCALE']):
+#                        report_tor_f_scale = "N/A"
+#                    else:
+#                        report_tor_f_scale = storm_reports_for_month[storm_reports_idx]['TOR_F_SCALE']
+#                    lat = lat_idx
+#                    lon = lon_idx
+#
+#                    #found_report = True
+#                    print(report_tor_f_scale)
+#
+#list = find_storm_reports(2, storm_reports)
+##process_month(2, 2007, list)
+#
+#find_report(list, 0, "2007-02-23", 19, 13, 11)

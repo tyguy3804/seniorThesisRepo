@@ -133,64 +133,64 @@ I needed to re-extract all my hrrr data because of mutiple reasons. I should hav
 
 ---
 
-## Week 8 Summary (MM/DD/YYYY)
+## Week 8 Summary (11/10/2025)
 ### This week I worked on:
 
-[Your answer here]
+Getting actual storm reports that I can use as label data.
 
 ### This week I learned:
 
-[Your answer here]
+My hrrr data once again isn't quite right. The latitude and longitude points, which are supposed to be high resolution but because I want to use era5 alongside they need to be the same, are not the same as era5 and I most likely have to readjust the hrrr_extraction code to properly align them.
 
 ### My successes this week were:
 
-[Your answer here]
+Decided how I wanted my feature and label data to look like.
 
 ### The challenges I faced this week were:
 
-[Your answer here]
+The biggest challenge this week and overall in this project has been attempting to align older era5 data with newer, much higher resolution hrrr data. But, I feel that I should have tested the data to make sure it was compatible before I extracted it all.
 
 ---
 
-## Week 9 Summary (MM/DD/YYYY)
+## Week 9 Summary (11/17/2025)
 ### This week I worked on:
 
-[Your answer here]
+Creating the program needed to engineer meteorological feature and label data. I used the metpy_calculations program to get all of my meteorlogical data and connected actual storm data with the actual row of feature data those storms occured on.
 
 ### This week I learned:
 
-[Your answer here]
+I have to generate feature and label data by month instead of by year incase of any bugs or errors that the dataset creation runs into.
 
 ### My successes this week were:
 
-[Your answer here]
+Finished the dataset creation program so that I can start creating feature and label data.
 
 ### The challenges I faced this week were:
 
-[Your answer here]
+The biggest challenge that I faced was how time consuming creating the feature and label data was. A singular day of data (11,760 points/rows) took about twenty-one minutes to complete. So, in order to generate mutiple months of data at one time I needed to use mutiple processes which isn't ideal for my computer.
 
 ---
 
-## Week 10 Summary (MM/DD/YYYY)
+## Week 10 Summary (11/24/2025)
 ### This week I worked on:
 
-[Your answer here]
+Creating feature and label data with all of the meteorological data neccessary for the model.
 
 ### This week I learned:
 
-[Your answer here]
+All of this data extraction and creation is extremely time consuming. I should have shrunk the amount of data I wanted so that I used my time more wisely.
 
 ### My successes this week were:
 
-[Your answer here]
+I have six months of data for ten years spanning from 2006-2015.
 
 ### The challenges I faced this week were:
 
-[Your answer here]
+Not many other than having to run mutiple processes for seperate months of data. This was a challenge because those processes took up most of my computers resources not allowing me to do any other work.
 
 ---
 
-## Week 11 Summary (MM/DD/YYYY)
+## Week 11 Summary (12/01/2025)
 ### This week I worked on:
 
 [Your answer here]
