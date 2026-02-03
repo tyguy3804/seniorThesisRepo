@@ -8,6 +8,17 @@ output: html_document
 ```{r}
 library(tidyverse)
 
+df <- read_csv("C:/Users/lwojd/VS Projects/seniorThesisRepo/code/R Studio/stormReports/StormEvents_d2007_oklahoma.csv")
+
+counts <- df %>% count(BEGIN_MONTH)
+print(counts)
+
+```
+
+
+```{r}
+library(tidyverse)
+
 setwd("C:/Users/lwojd/Vs Projects/seniorThesisRepo/code/R Studio/stormReports")
 getwd()
 
@@ -32,7 +43,7 @@ files %>%
         LAT_IDX = as.integer( (BEGIN_LAT - 33.6) / 0.25),
         LON_IDX = as.integer( (-103 - BEGIN_LON) / -0.25)
         ) %>%
-      arrange(BEGIN_MONTH, BEGIN_DAY, BEGIN_HOUR) %>%
+      arrange(BEGIN_MONTH, BEGIN_DAY, BEGIN_HOUR, LAT_IDX, LON_IDX) %>%
       select(DATE, BEGIN_MONTH, BEGIN_DAY, BEGIN_HOUR, EVENT_TYPE, TOR_F_SCALE, LAT_IDX, LON_IDX )
       
     df_unique <- df %>% distinct()
@@ -45,3 +56,5 @@ files %>%
   
  
 ```
+
+
