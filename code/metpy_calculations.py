@@ -314,6 +314,19 @@ def get_era5_variables(ds_press, ds_sur, time, lat_idx, long_idx, variables= 'al
         variables = ['pressure', 'dewpt', 'temp','t2m', 'sp', 'u_wind', 'v_wind', 'geopotential_agl']
     
     results = {}
+
+    #print(ds_press, ds_sur)
+    print('Pressure dataset Shapes: ')
+    print('Pressure: ', ds_press.variables['pressure_level'][2])
+    print('Dewpoint: ',ds_press.variables['q'].shape)
+    print('Temperature: ', ds_press.variables['t'].shape)
+    print('U_wind: ', ds_press.variables['u'].shape)
+    print('V_wind', ds_press.variables['v'].shape)
+    print('Geopotential Height: ', ds_press.variables['z'].shape)
+
+    print('Surface Dataset Shapes: ')
+    print('2m Temperature: ', ds_sur.variables['t2m'].shape)
+    print('Surface Pressure: ' ,ds_sur.variables['sp'].shape)
     
     if 'pressure' in variables:
         p = ds_press.variables['pressure_level'][:]
@@ -395,6 +408,7 @@ def era5_calculate_lapse_rates(ds_press, ds_sur, time, lat_idx, long_idx):
     temp = data['temp']
     dewpt = data['dewpt']
 
+    print(pressure)
     lapse_rates = mpcalc.dry_lapse(pressure, temp[0]).to('degC')
 
     return lapse_rates
@@ -450,6 +464,8 @@ def era5_calculate_bulk_shear(ds_press, ds_sur, time, lat_idx, long_idx, depth_m
     u_wind = data['u_wind']
     v_wind = data['v_wind']
     geo_agl = data['geopotential_agl']
+
+    print(u_wind, v_wind)
 
     u_shear, v_shear = mpcalc.bulk_shear(
         pressure,
@@ -543,3 +559,11 @@ def era5_calculate_supercell_comp(ds_press, ds_sur, time, lat_idx, long_idx, mu_
         
         return supercell_comp
 
+sur_path = "C:/Users/lwojd/Data/era5/surface/2000/01/era5_sur_20000101.nc"
+press_path = "C:/Users/lwojd/Data/era5/pressure/2000/01/era5_press_20000101.nc"
+
+ds_press = Dataset(press_path, 'r')
+ds_sur = Dataset(sur_path, 'r')
+
+#get_era5_variables(ds_press, ds_sur, 0, 0, 0)
+era5_calculate_lapse_rates(ds_press, ds_sur, 0, 10, 25)
